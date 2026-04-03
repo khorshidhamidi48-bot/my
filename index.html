@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="fa" dir="rtl" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>English-Persian Dictionary</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body { box-sizing: border-box; }
+    * { font-family: 'Vazirmatn', system-ui, sans-serif; }
+    .nav-item { transition: all 0.3s ease; }
+    .nav-item:hover { transform: translateX(-4px); }
+    .nav-item.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+    .card-hover { transition: all 0.3s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15); }
+    .word-card { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .quiz-option { transition: all 0.2s ease; }
+    .quiz-option:hover:not(:disabled) { transform: scale(1.02); }
+    .quiz-option.correct { background: linear-gradient(135deg, #10b981, #059669) !important; color: white; }
+    .quiz-option.wrong { background: linear-gradient(135deg, #ef4444, #dc2626) !important; color: white; }
+    .progress-ring { transition: stroke-dashoffset 0.5s ease; }
+    .stat-card { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05)); }
+    .glass-effect { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.9); }
+    input:focus, textarea:focus, select:focus { outline: none; ring: 2px solid #6366f1; }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+  <div id="app" class="h-full flex overflow-hidden"><!-- Sidebar -->
+   <aside class="w-72 bg-white shadow-xl flex flex-col border-l border-indigo-100">
+    <div class="p-6 border-b border-indigo-100">
+     <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg"><span class="text-2xl">📚</span>
+      </div>
+      <div>
+       <h1 id="app-title" class="text-xl font-bold text-gray-800">دیکشنری من</h1>
+       <p class="text-xs text-gray-500">یادگیری آسان زبان</p>
+      </div>
+     </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-2"><button onclick="showPage('dashboard')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 font-medium" data-page="dashboard"> <span class="text-xl">🏠</span> <span>داشبورد</span> </button> <button onclick="showPage('words')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 font-medium" data-page="words"> <span class="text-xl">📖</span> <span>لغات من</span> </button> <button onclick="showPage('add')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 font-medium" data-page="add"> <span class="text-xl">➕</span> <span>افزودن لغت</span> </button> <button onclick="showPage('quiz')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 font-medium" data-page="quiz"> <span class="text-xl">🎯</span> <span>آزمون</span> </button>
+    </nav>
+    <div class="p-4 border-t border-indigo-100">
+     <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white">
+      <p class="text-sm opacity-90">تعداد کل لغات:</p>
+      <p id="sidebar-total" class="text-3xl font-bold">0</p>
+     </div>
+    </div>
+   </aside><!-- Main Content -->
+   <main class="flex-1 overflow-auto p-8"><!-- Dashboard Page -->
+    <div id="page-dashboard" class="page">
+     <h2 id="dashboard-title" class="text-3xl font-bold text-gray-800 mb-8">داشبورد</h2>
+     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="stat-card card-hover rounded-2xl p-6 border border-indigo-100">
+       <div class="flex items-center justify-between mb-4"><span class="text-4xl">📚</span> <span class="text-xs px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full">کل</span>
+       </div>
+       <p class="text-3xl font-bold text-gray-800" id="stat-total">0</p>
+       <p class="text-sm text-gray-500 mt-1">کل لغات</p>
+      </div>
+      <div class="stat-card card-hover rounded-2xl p-6 border border-green-100">
+       <div class="flex items-center justify-between mb-4"><span class="text-4xl">✅</span> <span class="text-xs px-3 py-1 bg-green-100 text-green-600 rounded-full">یاد گرفته</span>
+       </div>
+       <p class="text-3xl font-bold text-green-600" id="stat-mastered">0</p>
+       <p class="text-sm text-gray-500 mt-1">لغات تسلط‌یافته</p>
+      </div>
+      <div class="stat-card card-hover rounded-2xl p-6 border border-amber-100">
+       <div class="flex items-center justify-between mb-4"><span class="text-4xl">📝</span> <span class="text-xs px-3 py-1 bg-amber-100 text-amber-600 rounded-full">در حال یادگیری</span>
+       </div>
+       <p class="text-3xl font-bold text-amber-600" id="stat-learning">0</p>
+       <p class="text-sm text-gray-500 mt-1">در حال یادگیری</p>
+      </div>
+      <div class="stat-card card-hover rounded-2xl p-6 border border-purple-100">
+       <div class="flex items-center justify-between mb-4"><span class="text-4xl">📊</span> <span class="text-xs px-3 py-1 bg-purple-100 text-purple-600 rounded-full">پیشرفت</span>
+       </div>
+       <p class="text-3xl font-bold text-purple-600" id="stat-progress">0%</p>
+       <p class="text-sm text-gray-500 mt-1">درصد تسلط</p>
+      </div>
+     </div>
+     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+       <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><span>🕐</span> آخرین لغات اضافه شده</h3>
+       <div id="recent-words" class="space-y-3">
+        <p class="text-gray-400 text-center py-8">هنوز لغتی اضافه نشده است</p>
+       </div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+       <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><span>📁</span> دسته‌بندی‌ها</h3>
+       <div id="categories-chart" class="space-y-3">
+        <p class="text-gray-400 text-center py-8">هنوز دسته‌بندی‌ای وجود ندارد</p>
+       </div>
+      </div>
+     </div>
+    </div><!-- Words List Page -->
+    <div id="page-words" class="page hidden">
+     <div class="flex items-center justify-between mb-8">
+      <h2 class="text-3xl font-bold text-gray-800">لغات من</h2>
+      <div class="flex gap-3"><input type="text" id="search-input" placeholder="جستجوی لغت..." class="px-4 py-2 rounded-xl border border-gray-200 focus:border-indigo-400 w-64" oninput="filterWords()"> <select id="filter-category" class="px-4 py-2 rounded-xl border border-gray-200 focus:border-indigo-400" onchange="filterWords()"> <option value="">همه دسته‌ها</option> </select> <select id="filter-status" class="px-4 py-2 rounded-xl border border-gray-200 focus:border-indigo-400" onchange="filterWords()"> <option value="">همه</option> <option value="mastered">یاد گرفته</option> <option value="learning">در حال یادگیری</option> </select>
+      </div>
+     </div>
+     <div id="words-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <p class="text-gray-400 text-center py-16 col-span-full">هنوز لغتی اضافه نشده است. از بخش "افزودن لغت" شروع کنید!</p>
+     </div>
+    </div><!-- Add Word Page -->
+    <div id="page-add" class="page hidden">
+     <h2 class="text-3xl font-bold text-gray-800 mb-8">افزودن لغت جدید</h2>
+     <div class="max-w-2xl">
+      <form id="add-word-form" class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 space-y-6">
+       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div><label for="word-english" class="block text-sm font-medium text-gray-700 mb-2">کلمه انگلیسی *</label> <input type="text" id="word-english" required dir="ltr" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 text-left" placeholder="English word">
+        </div>
+        <div><label for="word-persian" class="block text-sm font-medium text-gray-700 mb-2">معنی فارسی *</label> <input type="text" id="word-persian" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400" placeholder="معنی فارسی">
+        </div>
+       </div>
+       <div><label for="word-example" class="block text-sm font-medium text-gray-700 mb-2">مثال (اختیاری)</label> <textarea id="word-example" rows="2" dir="ltr" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 text-left" placeholder="Example sentence using this word"></textarea>
+       </div>
+       <div><label for="word-category" class="block text-sm font-medium text-gray-700 mb-2">دسته‌بندی</label> <input type="text" id="word-category" list="category-suggestions" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400" placeholder="مثال: روزمره، کسب‌وکار، سفر"> <datalist id="category-suggestions"></datalist>
+       </div>
+       <div class="flex gap-4"><button type="submit" id="add-btn" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg transition-all"> ➕ افزودن لغت </button> <button type="button" onclick="resetForm()" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"> پاک کردن </button>
+       </div>
+      </form>
+     </div>
+    </div><!-- Edit Word Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+     <div class="bg-white rounded-2xl p-8 max-w-lg w-full max-h-[90%] overflow-auto">
+      <div class="flex items-center justify-between mb-6">
+       <h3 class="text-2xl font-bold text-gray-800">ویرایش لغت</h3><button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+      </div>
+      <form id="edit-word-form" class="space-y-4"><input type="hidden" id="edit-word-id">
+       <div><label class="block text-sm font-medium text-gray-700 mb-2">کلمه انگلیسی *</label> <input type="text" id="edit-english" required dir="ltr" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 text-left">
+       </div>
+       <div><label class="block text-sm font-medium text-gray-700 mb-2">معنی فارسی *</label> <input type="text" id="edit-persian" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400">
+       </div>
+       <div><label class="block text-sm font-medium text-gray-700 mb-2">مثال</label> <textarea id="edit-example" rows="2" dir="ltr" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 text-left"></textarea>
+       </div>
+       <div><label class="block text-sm font-medium text-gray-700 mb-2">دسته‌بندی</label> <input type="text" id="edit-category" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400">
+       </div>
+       <div class="flex items-center gap-3"><input type="checkbox" id="edit-mastered" class="w-5 h-5 rounded text-indigo-600"> <label for="edit-mastered" class="text-sm text-gray-700">یاد گرفته‌ام</label>
+       </div>
+       <div class="flex gap-4 pt-4"><button type="submit" id="save-edit-btn" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-xl font-medium"> ذخیره تغییرات </button> <button type="button" onclick="closeEditModal()" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-600"> انصراف </button>
+       </div>
+      </form>
+     </div>
+    </div><!-- Quiz Page -->
+    <div id="page-quiz" class="page hidden">
+     <div id="quiz-start" class="text-center py-16">
+      <div class="text-8xl mb-6">
+       🎯
+      </div>
+      <h2 class="text-3xl font-bold text-gray-800 mb-4">آزمون لغات</h2>
+      <p class="text-gray-500 mb-8 max-w-md mx-auto">دانش خود را از لغات تست کنید! معنی فارسی هر کلمه انگلیسی را انتخاب کنید.</p>
+      <div class="max-w-sm mx-auto mb-8"><label class="block text-sm font-medium text-gray-700 mb-2">تعداد سوالات</label> <select id="quiz-count" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400"> <option value="5">۵ سوال</option> <option value="10" selected>۱۰ سوال</option> <option value="15">۱۵ سوال</option> <option value="20">۲۰ سوال</option> </select>
+      </div><button onclick="startQuiz()" id="start-quiz-btn" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-12 py-4 rounded-xl font-medium text-lg hover:shadow-lg transition-all"> شروع آزمون </button>
+      <p id="quiz-error" class="text-red-500 mt-4 hidden">حداقل ۴ لغت برای شروع آزمون نیاز است!</p>
+     </div>
+     <div id="quiz-active" class="hidden max-w-2xl mx-auto">
+      <div class="flex items-center justify-between mb-6"><span class="text-sm text-gray-500">سوال <span id="quiz-current">1</span> از <span id="quiz-total">10</span></span> <span class="text-sm font-medium text-indigo-600">امتیاز: <span id="quiz-score">0</span></span>
+      </div>
+      <div class="w-full h-2 bg-gray-200 rounded-full mb-8">
+       <div id="quiz-progress" class="h-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all" style="width: 0%"></div>
+      </div>
+      <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 text-center mb-6">
+       <p class="text-sm text-gray-500 mb-2">معنی این کلمه چیست؟</p>
+       <h3 id="quiz-word" class="text-4xl font-bold text-gray-800" dir="ltr">Word</h3>
+      </div>
+      <div id="quiz-options" class="grid grid-cols-2 gap-4">
+      </div>
+     </div>
+     <div id="quiz-result" class="hidden text-center py-16">
+      <div id="result-emoji" class="text-8xl mb-6">
+       🏆
+      </div>
+      <h2 class="text-3xl font-bold text-gray-800 mb-4">آزمون تمام شد!</h2>
+      <p class="text-gray-500 mb-2">امتیاز شما:</p>
+      <p class="text-6xl font-bold text-indigo-600 mb-2"><span id="result-score">0</span> از <span id="result-total">10</span></p>
+      <p id="result-percent" class="text-2xl text-gray-600 mb-8">۰٪</p>
+      <div class="flex gap-4 justify-center"><button onclick="startQuiz()" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 rounded-xl font-medium hover:shadow-lg transition-all"> آزمون مجدد </button> <button onclick="showPage('words')" class="px-8 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"> مرور لغات </button>
+      </div>
+     </div>
+    </div>
+   </main>
+  </div>
+  <script>
+    const defaultConfig = {
+      app_title: 'دیکشنری من',
+      dashboard_title: 'داشبورد',
+      background_color: '#f8fafc',
+      primary_color: '#6366f1',
+      text_color: '#1e293b',
+      surface_color: '#ffffff',
+      accent_color: '#8b5cf6'
+    };
+
+    let config = { ...defaultConfig };
+    let words = [];
+    let currentEditWord = null;
+    let quizState = { questions: [], current: 0, score: 0 };
+
+    // Data Handler
+    const dataHandler = {
+      onDataChanged(data) {
+        words = data;
+        updateUI();
+      }
+    };
+
+    function updateUI() {
+      updateStats();
+      updateWordsList();
+      updateRecentWords();
+      updateCategories();
+      updateCategoryFilters();
+    }
+
+    function updateStats() {
+      const total = words.length;
+      const mastered = words.filter(w => w.mastered).length;
+      const learning = total - mastered;
+      const progress = total > 0 ? Math.round((mastered / total) * 100) : 0;
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-mastered').textContent = mastered;
+      document.getElementById('stat-learning').textContent = learning;
+      document.getElementById('stat-progress').textContent = progress + '%';
+      document.getElementById('sidebar-total').textContent = total;
+    }
+
+    function updateWordsList() {
+      const container = document.getElementById('words-list');
+      
+      if (words.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-16 col-span-full">هنوز لغتی اضافه نشده است. از بخش "افزودن لغت" شروع کنید!</p>';
+        return;
+      }
+
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      const categoryFilter = document.getElementById('filter-category').value;
+      const statusFilter = document.getElementById('filter-status').value;
+
+      let filtered = words.filter(word => {
+        const matchesSearch = word.english.toLowerCase().includes(searchTerm) || 
+                              word.persian.includes(searchTerm);
+        const matchesCategory = !categoryFilter || word.category === categoryFilter;
+        const matchesStatus = !statusFilter || 
+                              (statusFilter === 'mastered' && word.mastered) || 
+                              (statusFilter === 'learning' && !word.mastered);
+        return matchesSearch && matchesCategory && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-16 col-span-full">نتیجه‌ای یافت نشد</p>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(word => `
+        <div class="word-card bg-white rounded-xl p-5 border border-gray-100 card-hover">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex-1">
+              <h4 class="text-xl font-bold text-gray-800" dir="ltr">${escapeHtml(word.english)}</h4>
+              <p class="text-lg text-indigo-600 mt-1">${escapeHtml(word.persian)}</p>
+            </div>
+            <span class="text-2xl">${word.mastered ? '✅' : '📝'}</span>
+          </div>
+          ${word.example ? `<p class="text-sm text-gray-500 mb-3 italic" dir="ltr">"${escapeHtml(word.example)}"</p>` : ''}
+          ${word.category ? `<span class="inline-block text-xs px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full mb-3">${escapeHtml(word.category)}</span>` : ''}
+          <div class="flex gap-2 pt-3 border-t border-gray-100">
+            <button onclick="toggleMastered('${word.__backendId}')" 
+              class="flex-1 text-sm py-2 rounded-lg ${word.mastered ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'} hover:opacity-80">
+              ${word.mastered ? '✓ یاد گرفتم' : '○ در حال یادگیری'}
+            </button>
+            <button onclick="openEditModal('${word.__backendId}')" 
+              class="px-4 py-2 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 text-sm">
+              ✏️
+            </button>
+            <button onclick="confirmDelete('${word.__backendId}')" id="del-${word.__backendId}"
+              class="px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-sm">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateRecentWords() {
+      const container = document.getElementById('recent-words');
+      const sorted = [...words].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+      
+      if (sorted.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-8">هنوز لغتی اضافه نشده است</p>';
+        return;
+      }
+
+      container.innerHTML = sorted.map(word => `
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+          <div>
+            <span class="font-medium text-gray-800" dir="ltr">${escapeHtml(word.english)}</span>
+            <span class="text-gray-400 mx-2">—</span>
+            <span class="text-indigo-600">${escapeHtml(word.persian)}</span>
+          </div>
+          <span class="text-lg">${word.mastered ? '✅' : '📝'}</span>
+        </div>
+      `).join('');
+    }
+
+    function updateCategories() {
+      const container = document.getElementById('categories-chart');
+      const categories = {};
+      
+      words.forEach(word => {
+        const cat = word.category || 'بدون دسته';
+        categories[cat] = (categories[cat] || 0) + 1;
+      });
+
+      const entries = Object.entries(categories);
+      
+      if (entries.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-8">هنوز دسته‌بندی‌ای وجود ندارد</p>';
+        return;
+      }
+
+      const maxCount = Math.max(...Object.values(categories));
+      const colors = ['bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-blue-500', 'bg-teal-500'];
+
+      container.innerHTML = entries.map(([cat, count], i) => `
+        <div class="space-y-1">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600">${escapeHtml(cat)}</span>
+            <span class="text-gray-500">${count} لغت</span>
+          </div>
+          <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div class="${colors[i % colors.length]} h-full rounded-full transition-all" style="width: ${(count / maxCount) * 100}%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateCategoryFilters() {
+      const categories = [...new Set(words.map(w => w.category).filter(Boolean))];
+      const select = document.getElementById('filter-category');
+      const datalist = document.getElementById('category-suggestions');
+      
+      select.innerHTML = '<option value="">همه دسته‌ها</option>' + 
+        categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
+      
+      datalist.innerHTML = categories.map(cat => `<option value="${escapeHtml(cat)}">`).join('');
+    }
+
+    function filterWords() {
+      updateWordsList();
+    }
+
+    function showPage(pageName) {
+      document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+      document.getElementById('page-' + pageName).classList.remove('hidden');
+      
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === pageName) {
+          item.classList.add('active');
+        }
+      });
+    }
+
+    // Add word
+    document.getElementById('add-word-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (words.length >= 999) {
+        showToast('حداکثر ۹۹۹ لغت می‌توانید اضافه کنید!', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('add-btn');
+      btn.disabled = true;
+      btn.textContent = 'در حال ذخیره...';
+
+      const newWord = {
+        english: document.getElementById('word-english').value.trim(),
+        persian: document.getElementById('word-persian').value.trim(),
+        example: document.getElementById('word-example').value.trim(),
+        category: document.getElementById('word-category').value.trim(),
+        mastered: false,
+        created_at: new Date().toISOString()
+      };
+
+      const result = await window.dataSdk.create(newWord);
+      
+      btn.disabled = false;
+      btn.textContent = '➕ افزودن لغت';
+
+      if (result.isOk) {
+        resetForm();
+        showToast('لغت با موفقیت اضافه شد!', 'success');
+      } else {
+        showToast('خطا در ذخیره لغت', 'error');
+      }
+    });
+
+    function resetForm() {
+      document.getElementById('add-word-form').reset();
+    }
+
+    // Edit modal
+    function openEditModal(id) {
+      const word = words.find(w => w.__backendId === id);
+      if (!word) return;
+
+      currentEditWord = word;
+      document.getElementById('edit-word-id').value = id;
+      document.getElementById('edit-english').value = word.english;
+      document.getElementById('edit-persian').value = word.persian;
+      document.getElementById('edit-example').value = word.example || '';
+      document.getElementById('edit-category').value = word.category || '';
+      document.getElementById('edit-mastered').checked = word.mastered;
+
+      document.getElementById('edit-modal').classList.remove('hidden');
+      document.getElementById('edit-modal').classList.add('flex');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+      document.getElementById('edit-modal').classList.remove('flex');
+      currentEditWord = null;
+    }
+
+    document.getElementById('edit-word-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentEditWord) return;
+
+      const btn = document.getElementById('save-edit-btn');
+      btn.disabled = true;
+      btn.textContent = 'در حال ذخیره...';
+
+      const updatedWord = {
+        ...currentEditWord,
+        english: document.getElementById('edit-english').value.trim(),
+        persian: document.getElementById('edit-persian').value.trim(),
+        example: document.getElementById('edit-example').value.trim(),
+        category: document.getElementById('edit-category').value.trim(),
+        mastered: document.getElementById('edit-mastered').checked
+      };
+
+      const result = await window.dataSdk.update(updatedWord);
+      
+      btn.disabled = false;
+      btn.textContent = 'ذخیره تغییرات';
+
+      if (result.isOk) {
+        closeEditModal();
+        showToast('لغت با موفقیت ویرایش شد!', 'success');
+      } else {
+        showToast('خطا در ویرایش لغت', 'error');
+      }
+    });
+
+    async function toggleMastered(id) {
+      const word = words.find(w => w.__backendId === id);
+      if (!word) return;
+
+      const result = await window.dataSdk.update({ ...word, mastered: !word.mastered });
+      if (!result.isOk) {
+        showToast('خطا در به‌روزرسانی', 'error');
+      }
+    }
+
+    function confirmDelete(id) {
+      const btn = document.getElementById('del-' + id);
+      if (btn.dataset.confirm === 'true') {
+        deleteWord(id);
+      } else {
+        btn.dataset.confirm = 'true';
+        btn.innerHTML = 'تأیید؟';
+        btn.classList.add('bg-red-500', 'text-white');
+        btn.classList.remove('bg-red-50', 'text-red-600');
+        
+        setTimeout(() => {
+          if (btn) {
+            btn.dataset.confirm = 'false';
+            btn.innerHTML = '🗑️';
+            btn.classList.remove('bg-red-500', 'text-white');
+            btn.classList.add('bg-red-50', 'text-red-600');
+          }
+        }, 3000);
+      }
+    }
+
+    async function deleteWord(id) {
+      const word = words.find(w => w.__backendId === id);
+      if (!word) return;
+
+      const result = await window.dataSdk.delete(word);
+      if (result.isOk) {
+        showToast('لغت حذف شد', 'success');
+      } else {
+        showToast('خطا در حذف لغت', 'error');
+      }
+    }
+
+    // Quiz
+    function startQuiz() {
+      if (words.length < 4) {
+        document.getElementById('quiz-error').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('quiz-error').classList.add('hidden');
+
+      const count = parseInt(document.getElementById('quiz-count').value);
+      const shuffled = [...words].sort(() => Math.random() - 0.5);
+      const questions = shuffled.slice(0, Math.min(count, words.length));
+
+      quizState = { questions, current: 0, score: 0 };
+      
+      document.getElementById('quiz-start').classList.add('hidden');
+      document.getElementById('quiz-result').classList.add('hidden');
+      document.getElementById('quiz-active').classList.remove('hidden');
+      document.getElementById('quiz-total').textContent = questions.length;
+
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const { questions, current } = quizState;
+      const question = questions[current];
+
+      document.getElementById('quiz-current').textContent = current + 1;
+      document.getElementById('quiz-score').textContent = quizState.score;
+      document.getElementById('quiz-progress').style.width = `${((current) / questions.length) * 100}%`;
+      document.getElementById('quiz-word').textContent = question.english;
+
+      // Generate options
+      const wrongAnswers = words
+        .filter(w => w.__backendId !== question.__backendId)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+        .map(w => w.persian);
+
+      const options = [question.persian, ...wrongAnswers].sort(() => Math.random() - 0.5);
+
+      document.getElementById('quiz-options').innerHTML = options.map(opt => `
+        <button onclick="checkAnswer('${escapeHtml(opt)}', '${escapeHtml(question.persian)}')"
+          class="quiz-option bg-white border-2 border-gray-200 rounded-xl p-4 text-lg font-medium text-gray-700 hover:border-indigo-400">
+          ${escapeHtml(opt)}
+        </button>
+      `).join('');
+    }
+
+    function checkAnswer(selected, correct) {
+      const buttons = document.querySelectorAll('.quiz-option');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === correct) {
+          btn.classList.add('correct');
+        } else if (btn.textContent.trim() === selected && selected !== correct) {
+          btn.classList.add('wrong');
+        }
+      });
+
+      if (selected === correct) {
+        quizState.score++;
+      }
+
+      setTimeout(() => {
+        quizState.current++;
+        if (quizState.current < quizState.questions.length) {
+          showQuestion();
+        } else {
+          showResults();
+        }
+      }, 1000);
+    }
+
+    function showResults() {
+      const { score, questions } = quizState;
+      const percent = Math.round((score / questions.length) * 100);
+
+      document.getElementById('quiz-active').classList.add('hidden');
+      document.getElementById('quiz-result').classList.remove('hidden');
+      
+      document.getElementById('result-score').textContent = score;
+      document.getElementById('result-total').textContent = questions.length;
+      document.getElementById('result-percent').textContent = `${percent}٪`;
+
+      let emoji = '😢';
+      if (percent >= 90) emoji = '🏆';
+      else if (percent >= 70) emoji = '🎉';
+      else if (percent >= 50) emoji = '👍';
+      else if (percent >= 30) emoji = '💪';
+      
+      document.getElementById('result-emoji').textContent = emoji;
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-4 left-4 px-6 py-3 rounded-xl text-white font-medium shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-indigo-500'
+      }`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }
+
+    // Element SDK
+    async function onConfigChange(cfg) {
+      config = { ...defaultConfig, ...cfg };
+      document.getElementById('app-title').textContent = config.app_title;
+      document.getElementById('dashboard-title').textContent = config.dashboard_title;
+    }
+
+    function mapToCapabilities(cfg) {
+      return {
+        recolorables: [
+          {
+            get: () => cfg.background_color || defaultConfig.background_color,
+            set: (v) => { cfg.background_color = v; window.elementSdk.setConfig({ background_color: v }); }
+          },
+          {
+            get: () => cfg.surface_color || defaultConfig.surface_color,
+            set: (v) => { cfg.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }
+          },
+          {
+            get: () => cfg.text_color || defaultConfig.text_color,
+            set: (v) => { cfg.text_color = v; window.elementSdk.setConfig({ text_color: v }); }
+          },
+          {
+            get: () => cfg.primary_color || defaultConfig.primary_color,
+            set: (v) => { cfg.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); }
+          },
+          {
+            get: () => cfg.accent_color || defaultConfig.accent_color,
+            set: (v) => { cfg.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); }
+          }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
+
+    function mapToEditPanelValues(cfg) {
+      return new Map([
+        ['app_title', cfg.app_title || defaultConfig.app_title],
+        ['dashboard_title', cfg.dashboard_title || defaultConfig.dashboard_title]
+      ]);
+    }
+
+    // Initialize
+    async function init() {
+      if (window.elementSdk) {
+        await window.elementSdk.init({
+          defaultConfig,
+          onConfigChange,
+          mapToCapabilities,
+          mapToEditPanelValues
+        });
+      }
+
+      if (window.dataSdk) {
+        const result = await window.dataSdk.init(dataHandler);
+        if (!result.isOk) {
+          console.error('Failed to initialize Data SDK');
+        }
+      }
+
+      showPage('dashboard');
+    }
+
+    init();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c570282f11bdbf7',t:'MTc2OTY3MTY3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
